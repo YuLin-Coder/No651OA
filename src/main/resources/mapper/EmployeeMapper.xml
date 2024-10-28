@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.EmployeeDao">
+
+    <!--  -->
+    <resultMap id="EmployeeMap" type="com.njl.oa.entity.Employee">
+        <id column="EMPLOYEE_ID" property="employeeId" jdbcType="INTEGER"/>
+        <result column="EMPLOYEE_NAME" property="employeeName" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_NUMBER" property="employeeNumber" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_PASSWORD" property="employeePassword" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_SEX" property="employeeSex" jdbcType="INTEGER"/>
+        <result column="EMPLOYEE_BIRTHDATE" property="employeeBirthDate" jdbcType="TIMESTAMP"/>
+        <result column="EMPLOYEE_PHONE" property="employeePhone" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_EMAIL" property="employeeEmail" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_ADDRESS" property="employeeAddress" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_START" property="employeeStart" jdbcType="INTEGER"/>
+        <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="EMPLOYEE_DESC" property="employeeDesc" jdbcType="VARCHAR"/>
+        <result column="ROLE_ID" property="roleId" jdbcType="INTEGER"/>
+        <result column="DEPARTMENT_ID" property="departmentId" jdbcType="INTEGER"/>
+        <result column="DEPARTMENT_TITLE" property="departmentTitle" jdbcType="VARCHAR"/>
+        <result column="ROLE_TITLE" property="roleTitle" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_PHOTO" property="employeePhoto" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 根据雇员ID查询雇员 -->
+    <select id="selectEmployeeByEmployeeId" resultMap="EmployeeMap">
+        SELECT se.*, sd.`DEPARTMENT_TITLE`, sr.`ROLE_TITLE`
+        FROM sys_employee se
+                 INNER JOIN sys_department sd ON se.`DEPARTMENT_ID` = sd.`DEPARTMENT_ID`
+                 INNER JOIN sys_role sr ON se.`ROLE_ID` = sr.`ROLE_ID`
+            AND se.EMPLOYEE_ID = #{employeeId};
+    </select>
+
+    <!--查询全部雇员信息总数  -->
+    <select id="selectEmployeeAllCount" resultType="Integer">
+        select count(*)
+        from sys_employee;
+    </select>
+
+    <!-- 查询全部雇员信息 -->
+    <select id="selectEmployeeAll" resultMap="EmployeeMap">
+        SELECT se.*, sd.`DEPARTMENT_TITLE`, sr.`ROLE_TITLE`
+        FROM sys_employee se
+        INNER JOIN sys_department sd ON se.`DEPARTMENT_ID` = sd.`DEPARTMENT_ID`
+        INNER JOIN sys_role sr ON se.`ROLE_ID` = sr.`ROLE_ID`
+        WHERE 1 = 1
+        <if test="employee != null">
+            <if test="employee.employeeNumber != null and employee.employeeNumber != ''">AND se.EMPLOYEE_NUMBER LIKE
+                '%${employee.employeeNumber}%'
+            </if>
+            <if test="employee.employeeName != null and employee.employeeName != ''">AND se.EMPLOYEE_NAME LIKE
+                '%${employee.employeeName}%'
+            </if>
+            <if test="employee.employeePhone != null and employee.employeePhone != ''">AND se.EMPLOYEE_PHONE LIKE
+                '%${employee.employeePhone}%'
+            </if>
+            <if test="employee.departmentTitle != null and employee.departmentTitle != ''">AND sd.DEPARTMENT_TITLE LIKE
+                '%${employee.departmentTitle}%'
+            </if>
+            <if test="employee.employeeStart != null and employee.employeeStart != ''">AND se.EMPLOYEE_START LIKE
+                '%${employee.employeeStart}%'
+            </if>
+            <if test="employee.startTime != null and employee.startTime != '' and employee.endTime != null and employee.endTime != ''">
+                <![CDATA[AND (DATE_FORMAT(se.CREATE_TIME, '%Y-%m-%d') >= DATE_FORMAT( #{employee.startTime}, '%Y-%m-%d'))]]>
+                <![CDATA[AND (DATE_FORMAT(se.CREATE_TIME, '%Y-%m-%d') <= DATE_FORMAT( #{employee.endTime}, '%Y-%m-%d'))]]>
+            </if>
+        </if>
+        <if test="limit > 0">LIMIT ${page},${limit}</if>
+    </select>
+
+    <!-- 根据工号查询雇员 -->
+    <select id="selectEmployeeByNumber" resultMap="EmployeeMap">
+        SELECT se.*, sd.`DEPARTMENT_TITLE`, sr.`ROLE_TITLE`
+        FROM sys_employee se
+                 INNER JOIN sys_department sd ON se.`DEPARTMENT_ID` = sd.`DEPARTMENT_ID`
+                 INNER JOIN sys_role sr ON se.`ROLE_ID` = sr.`ROLE_ID`
+        WHERE se.EMPLOYEE_NUMBER = #{employeeNumber};
+    </select>
+
+    <!-- 添加雇员 -->
+    <insert id="addEmployee" parameterType="Employee">
+        INSERT INTO `OA_2021`.`sys_employee` (`EMPLOYEE_NAME`,
+                                              `EMPLOYEE_NUMBER`,
+                                              `EMPLOYEE_SEX`,
+                                              `EMPLOYEE_PASSWORD`,
+                                              `EMPLOYEE_BIRTHDATE`,
+                                              `EMPLOYEE_PHONE`,
+                                              `EMPLOYEE_EMAIL`,
+                                              `EMPLOYEE_ADDRESS`,
+                                              `EMPLOYEE_START`,
+                                              `CREATE_TIME`,
+                                              `EMPLOYEE_DESC`,
+                                              `ROLE_ID`,
+                                              `DEPARTMENT_ID`)
+        VALUES (#{employeeName},
+                #{employeeNumber},
+                #{employeeSex},
+                #{employeePassword},
+                #{employeeBirthDate},
+                #{employeePhone},
+                #{employeeEmail},
+                #{employeeAddress},
+                #{employeeStart},
+                now(),
+                #{employeeDesc},
+                #{roleId},
+                #{departmentId});
+    </insert>
+
+    <!-- 删除雇员 -->
+    <delete id="deleteEmployee">
+        DELETE
+        FROM `OA_2021`.`sys_employee`
+        WHERE `EMPLOYEE_ID` = #{employeeId};
+    </delete>
+
+    <!-- 修改雇员信息 -->
+    <update id="updateEmployeeAdmin" parameterType="Employee">
+        UPDATE
+            `OA_2021`.`sys_employee`
+        SET `EMPLOYEE_NAME`      = #{employeeName},
+            `EMPLOYEE_NUMBER`    = #{employeeNumber},
+            `EMPLOYEE_SEX`       = #{employeeSex},
+            `EMPLOYEE_BIRTHDATE` = #{employeeBirthDate},
+            `EMPLOYEE_PHONE`     = #{employeePhone},
+            `EMPLOYEE_PHOTO`     = #{employeePhoto},
+            `EMPLOYEE_EMAIL`     = #{employeeEmail},
+            `EMPLOYEE_ADDRESS`   = #{employeeAddress},
+            `EMPLOYEE_START`     = #{employeeStart},
+            `UPDATE_TIME`        = now(),
+            `EMPLOYEE_DESC`      = #{employeeDesc},
+            `ROLE_ID`            = #{roleId},
+            `DEPARTMENT_ID`      = #{departmentId}
+        WHERE `EMPLOYEE_ID` = #{employeeId};
+    </update>
+
+    <!-- 修改雇员信息 -->
+    <update id="updateEmployee" parameterType="Employee">
+        UPDATE
+            `OA_2021`.`sys_employee`
+        SET `EMPLOYEE_NAME`      = #{employeeName},
+            `EMPLOYEE_NUMBER`    = #{employeeNumber},
+            `EMPLOYEE_SEX`       = #{employeeSex},
+            `EMPLOYEE_BIRTHDATE` = #{employeeBirthDate},
+            `EMPLOYEE_PHONE`     = #{employeePhone},
+            `EMPLOYEE_PHOTO`     = #{employeePhoto},
+            `EMPLOYEE_EMAIL`     = #{employeeEmail},
+            `EMPLOYEE_ADDRESS`   = #{employeeAddress},
+            `UPDATE_TIME`        = now(),
+            `EMPLOYEE_DESC`      = #{employeeDesc}
+        WHERE `EMPLOYEE_ID` = #{employeeId};
+    </update>
+
+    <!-- 根据角色ID查询雇员 -->
+    <select id="selectEmployeeByRole" resultType="String">
+        SELECT sr.`ROLE_TITLE`
+        FROM sys_employee se
+                 INNER JOIN sys_role sr ON se.`ROLE_ID` = sr.`ROLE_ID`
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber};
+    </select>
+
+    <!-- 根据权限查询雇员 -->
+    <select id="selectEmployeeByPermissions" resultType="String">
+        SELECT sp.`PERMISSIONS_TITLE`
+        FROM sys_employee se
+                 INNER JOIN sys_role sr ON se.`ROLE_ID` = sr.`ROLE_ID`
+                 INNER JOIN sys_role_permissions srp ON sr.`ROLE_ID` = srp.`ROLE_ID`
+                 INNER JOIN sys_permissions sp ON srp.`PERMISSIONS_ID` = sp.`PERMISSIONS_ID`
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber};
+    </select>
+
+    <!-- 校验雇员工号 -->
+    <select id="verifyEmployeeNumber" parameterType="Employee" resultType="Integer">
+        SELECT count(*)
+        FROM sys_employee se
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber}
+        <if test="employeeId > 0">AND se.EMPLOYEE_ID != #{employeeId}</if>;
+    </select>
+
+    <!-- 校验雇员手机号 -->
+    <select id="verifyEmployeePhone" parameterType="Employee" resultType="Integer">
+        SELECT count(*)
+        FROM sys_employee se
+        WHERE se.`EMPLOYEE_PHONE` = #{employeePhone}
+        <if test="employeeId > 0">AND se.EMPLOYEE_ID != #{employeeId}</if>;
+    </select>
+
+    <!-- 校验雇员密码 -->
+    <select id="verifyEmployeePassword" resultType="Integer">
+        SELECT COUNT(*)
+        FROM sys_employee se
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber}
+          AND se.`EMPLOYEE_PASSWORD` = #{employeePassword};
+    </select>
+
+    <!-- 修改雇员密码 -->
+    <update id="updateEmployeePassword">
+        UPDATE
+            `OA_2021`.`sys_employee`
+        SET `EMPLOYEE_PASSWORD` = #{employeePassword}
+        WHERE `EMPLOYEE_NUMBER` = #{employeeNumber};
+    </update>
+
+    <!-- 批量修改雇员角色 -->
+    <update id="batchUpdateEmployeeByRoleId">
+        UPDATE sys_employee se
+        SET se.`ROLE_ID` = #{roleId}
+        WHERE
+        <foreach collection="employeeIdList" separator="or" item="item">
+            se.`EMPLOYEE_ID` = #{item}
+        </foreach>
+    </update>
+    <!-- 批量修改雇员部门 -->
+    <update id="batchUpdateEmployeeByDepartmentId">
+        UPDATE sys_employee se
+        SET se.`DEPARTMENT_ID` = #{departmentId}
+        WHERE
+        <foreach collection="employeeIdList" separator="or" item="item">
+            se.`EMPLOYEE_ID` = #{item}
+        </foreach>
+    </update>
+    <!-- 批量修改雇员密码 -->
+    <update id="resetEmployeePassword">
+        UPDATE sys_employee se
+        SET se.`EMPLOYEE_PASSWORD` = #{initPassword}
+        WHERE se.`EMPLOYEE_ID` = #{employeeId}
+    </update>
+</mapper>

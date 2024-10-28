@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.RoleDao">
+
+    <resultMap id="RoleMap" type="com.njl.oa.entity.Role">
+        <id column="ROLE_ID" property="roleId" jdbcType="INTEGER"/>
+        <result column="ROLE_TITLE" property="roleTitle" jdbcType="VARCHAR"/>
+        <result column="ROLE_DESC" property="roleDesc" jdbcType="VARCHAR"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="ROLE_START" property="roleStart" jdbcType="INTEGER"/>
+    </resultMap>
+
+        <select id="selectRoleAll" resultMap="RoleMap">
+            SELECT *
+            FROM sys_role
+        </select>
+
+    <insert id="addRole" parameterType="Role">
+        INSERT INTO `OA_2021`.`sys_role` (`ROLE_TITLE`,
+                                          `ROLE_DESC`,
+                                          `ROLE_START`,
+                                          `CREATE_TIME`)
+        VALUES (#{roleTitle},
+                #{roleDesc},
+                #{roleStart},
+                NOW());
+    </insert>
+
+    <update id="updateRole" parameterType="Role">
+        UPDATE
+            `OA_2021`.`sys_role`
+        SET `ROLE_TITLE`  = #{roleTitle},
+            `ROLE_DESC`   = #{roleDesc},
+            `ROLE_START`  = #{roleStart},
+            `UPDATE_TIME` = NOW()
+        WHERE `ROLE_ID` = #{roleId};
+    </update>
+
+    <delete id="deleteRole">
+        DELETE
+        FROM `OA_2021`.`sys_role`
+        WHERE `ROLE_ID` = #{roleId,jdbcType=INTEGER};
+    </delete>
+
+    <delete id="batchDeleteRoleByPermissions">
+        delete
+        from sys_role_permissions
+        where ROLE_ID = #{roleId};
+    </delete>
+
+    <delete id="batchDeleteRoleByMenu">
+        delete
+        from sys_role_menu
+        where ROLE_ID = #{roleId}
+    </delete>
+
+    <insert id="batchAddRoleByPermissions">
+        insert into sys_role_permissions(ROLE_ID, PERMISSIONS_ID,CREATE_TIME) values
+        <foreach collection="permissionsId" separator="," item="item">
+            (#{roleId},#{item},NOW())
+        </foreach>
+        ;
+    </insert>
+
+    <insert id="batchAddRoleByMenu">
+        insert into sys_role_menu(ROLE_ID, MENU_ID, CREATE_TIME) values
+        <foreach collection="menuId" item="menuId" separator=",">
+            (#{roleId},#{menuId},NOW())
+        </foreach>
+        ;
+    </insert>
+
+    <select id="verifyRoleTitle" resultType="Integer" parameterType="Role">
+        select count(*) from sys_role sr where sr.ROLE_TITLE = #{roleTitle}
+        <if test="roleId > 0">and sr.ROLE_ID != #{roleId}</if>
+    </select>
+</mapper>

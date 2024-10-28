@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.DepartmentDao">
+
+    <resultMap id="DepartmentMap" type="com.njl.oa.entity.Department">
+        <id column="DEPARTMENT_ID" property="departmentId" jdbcType="INTEGER"/>
+        <id column="DEPARTMENT_HEAD_ID" property="departmentHeadId" jdbcType="INTEGER"/>
+        <result column="DEPARTMENT_TITLE" property="departmentTitle" jdbcType="VARCHAR"/>
+        <result column="DEPARTMENT_DESC" property="departmentDesc" jdbcType="VARCHAR"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="DEPARTMENT_START" property="departmentStart" jdbcType="INTEGER"/>
+    </resultMap>
+
+
+    <select id="selectDepartmentAll" resultMap="DepartmentMap">
+        SELECT *
+        FROM sys_department;
+    </select>
+
+    <insert id="addDepartment" parameterType="Department">
+        INSERT INTO `OA_2021`.`sys_department` (`DEPARTMENT_TITLE`,
+                                                `DEPARTMENT_DESC`,
+                                                `CREATE_TIME`,
+                                                `DEPARTMENT_START`)
+        VALUES (#{departmentTitle},
+                #{departmentDesc},
+                NOW(),
+                #{departmentStart});
+    </insert>
+
+    <update id="updateDepartment" parameterType="Department">
+        UPDATE
+            `OA_2021`.`sys_department`
+        SET `DEPARTMENT_TITLE` = #{departmentTitle},
+            `DEPARTMENT_DESC`  = #{departmentDesc},
+            `UPDATE_TIME`      = NOW(),
+            `DEPARTMENT_START` = #{departmentStart}
+        WHERE `DEPARTMENT_ID` = #{departmentId};
+    </update>
+
+    <delete id="deleteDepartment">
+        DELETE
+        FROM `OA_2021`.`sys_department`
+        WHERE `DEPARTMENT_ID` = #{departmentId};
+    </delete>
+
+    <select id="verifyDepartmentTitle" parameterType="Department" resultType="Integer">
+        select count(*) from sys_department where DEPARTMENT_TITLE = #{departmentTitle}
+        <if test="departmentId > 0">and DEPARTMENT_ID != #{departmentId}</if>
+    </select>
+
+    <select id="verifyDepartmentByEmployee" resultType="Integer">
+        select count(*)
+        from sys_employee
+        where DEPARTMENT_ID = #{departmentId};
+    </select>
+
+    <select id="selectDepartmentHelmsman" resultType="String">
+        SELECT se.`EMPLOYEE_NAME`
+        FROM sys_employee se
+        WHERE se.`EMPLOYEE_ID` = #{employeeId};
+    </select>
+
+    <select id="selectEmployeeByNumber" resultType="Integer">
+        SELECT se.`EMPLOYEE_ID`
+        FROM sys_employee se
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber};
+    </select>
+
+    <update id="updateDepartmentHead">
+        UPDATE sys_department sd
+        SET sd.`DEPARTMENT_HEAD_ID` = #{departmentHead}
+        WHERE sd.`DEPARTMENT_ID` = #{departmentId};
+    </update>
+</mapper>

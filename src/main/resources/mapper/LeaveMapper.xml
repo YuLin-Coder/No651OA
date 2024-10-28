@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.LeaveDao">
+
+    <resultMap id="LeaveMap" type="com.njl.oa.entity.Leave">
+        <id column="LEAVE_ID" property="leaveId" jdbcType="INTEGER"/>
+        <result column="LEAVE_NUMBER" property="leaveNumber" jdbcType="VARCHAR"/>
+        <result column="LEAVE_NAME" property="leaveName" jdbcType="VARCHAR"/>
+        <result column="LEAVE_DAY" property="leaveDay" jdbcType="INTEGER"/>
+        <result column="LEAVE_REASON" property="leaveReason" jdbcType="VARCHAR"/>
+        <result column="LEAVE_CLASSIFY" property="leaveClassify" jdbcType="VARCHAR"/>
+        <result column="LEAVE_TIME" property="leaveTime" jdbcType="VARCHAR"/>
+        <result column="LEAVE_APPROVED" property="leaveApproved" jdbcType="INTEGER"/>
+        <result column="LEAVE_RECEIPT" property="leaveReceipt" jdbcType="VARCHAR"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="PROCESS_INSTANCE_ID" property="processInstanceId" jdbcType="VARCHAR"/>
+        <result column="LEAVE_DEPARTMENT" property="leaveDepartment" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 添加请假单 -->
+    <insert id="addLeave" parameterType="Leave">
+        INSERT INTO `OA_2021`.`bio_leave` (`LEAVE_NUMBER`,
+                                           `LEAVE_NAME`,
+                                           `LEAVE_DAY`,
+                                           `LEAVE_REASON`,
+                                           `LEAVE_TIME`,
+                                           `LEAVE_CLASSIFY`,
+                                           `CREATE_TIME`,
+                                           `LEAVE_RECEIPT`)
+        VALUES (#{leaveNumber},
+                #{leaveName},
+                #{leaveDay},
+                #{leaveReason},
+                #{leaveTime},
+                #{leaveClassify},
+                NOW(),
+                #{leaveReceipt});
+    </insert>
+
+    <!-- 校验请假单数据 -->
+    <select id="verifyLeave" parameterType="Leave" resultType="Integer">
+        SELECT count(*)
+        FROM sys_employee se
+                 INNER JOIN sys_department sd ON se.`DEPARTMENT_ID` = sd.`DEPARTMENT_ID`
+        WHERE se.`EMPLOYEE_NUMBER` = #{leaveNumber}
+          AND se.`EMPLOYEE_NAME` = #{leaveName}
+          AND sd.`DEPARTMENT_TITLE` = #{leaveDepartment};
+    </select>
+
+    <!-- 根据工号查询请假单 -->
+    <select id="selectLeaveByLeaveNumber" resultMap="LeaveMap">
+        SELECT *
+        FROM bio_leave bl
+        WHERE 1=1
+        <if test="leaveNumber != null and leaveNumber != ''">AND  bl.`LEAVE_NUMBER` = #{leaveNumber}
+        </if>
+
+
+        ORDER BY bl.`LEAVE_ID` DESC
+        LIMIT #{page},#{limit};
+    </select>
+
+    <!-- 根据工号查询请假单总数 -->
+    <select id="selectLeaveByLeaveNumberCount" resultType="Integer">
+        SELECT count(*)
+        FROM bio_leave bl
+        WHERE bl.`LEAVE_NUMBER` = #{leaveNumber}
+    </select>
+
+    <!-- 修改请假结果 -->
+    <update id="updateLeaveApproved">
+        UPDATE
+            `OA_2021`.`bio_leave`
+        SET `LEAVE_APPROVED` = #{leaveApproved},
+            `LEAVE_RECEIPT`  = #{leaveReceipt}
+        WHERE `LEAVE_ID` = #{leaveId};
+    </update>
+
+    <!-- 根据部门名称查询部门执行人工号 -->
+    <select id="selectDepartmentHeadDepartment" resultType="String">
+        SELECT se.`EMPLOYEE_NUMBER`
+        FROM sys_department sd
+                 INNER JOIN sys_employee se ON sd.`DEPARTMENT_HEAD_ID` = se.`EMPLOYEE_ID`
+        WHERE sd.`DEPARTMENT_TITLE` = #{departmentTitle};
+    </select>
+
+    <!-- 根据流程执行ID查询请假单 -->
+    <select id="selectLeaveByProcessInstanceId" resultMap="LeaveMap">
+        SELECT *
+        FROM bio_leave bl
+        WHERE bl.`PROCESS_INSTANCE_ID` = #{processInstanceId}
+        ORDER BY bl.`LEAVE_ID` DESC;
+    </select>
+
+    <!-- ****************************************************************************** -->
+    <!-- 查询正在审批中的请假单 -->
+    <select id="selectLeaveAllApproval" resultMap="LeaveMap">
+        SELECT *
+        FROM bio_leave bl
+        WHERE 1=1
+        <if test="approved == 0">AND bl.`LEAVE_APPROVED` = #{approved}</if>
+        <if test="approved > 0">AND bl.`LEAVE_APPROVED` != 0</if>
+        ORDER BY bl.`LEAVE_ID` DESC
+        LIMIT #{page},#{limit};
+    </select>
+
+    <!-- 查询正在审批中的请假单总数 -->
+    <select id="selectLeaveAllApprovalCount" resultType="Integer">
+        SELECT count(*)
+        FROM bio_leave bl
+        WHERE 1=1
+        <if test="approved == 0">AND bl.`LEAVE_APPROVED` = #{approved}</if>
+        <if test="approved > 0">AND bl.`LEAVE_APPROVED` > 0</if>
+    </select>
+
+    <!-- 审批请假单 -->
+    <update id="updateLeaveApproval">
+        UPDATE
+            `OA_2021`.`bio_leave`
+        SET `LEAVE_APPROVED` = #{leaveApproved},
+            `LEAVE_RECEIPT`  = #{leaveReceipt}
+        WHERE `LEAVE_ID` = #{leaveId};
+    </update>
+</mapper>

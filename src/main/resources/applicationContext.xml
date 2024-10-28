@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+   http://www.springframework.org/schema/beans/spring-beans.xsd
+   http://www.springframework.org/schema/context
+   http://www.springframework.org/schema/context/spring-context.xsd
+   http://www.springframework.org/schema/tx
+   http://www.springframework.org/schema/tx/spring-tx.xsd">
+
+    <!-- 扫描service包下所有使用注解的类型 -->
+    <context:component-scan base-package="com.njl.oa.service"/>
+
+    <!-- 配置数据库相关参数properties的属性：${url} -->
+    <context:property-placeholder location="classpath:jdbc.properties"/>
+
+    <!-- 数据库连接池 spring配置-->
+    <bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource">
+        <property name="driverClass" value="${jdbc.driver}"/>
+        <property name="jdbcUrl" value="${jdbc.url}"/>
+        <property name="user" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="maxPoolSize" value="${c3p0.maxPoolSize}"/>
+        <property name="minPoolSize" value="${c3p0.minPoolSize}"/>
+        <property name="autoCommitOnClose" value="${c3p0.autoCommitOnClose}"/>
+        <property name="checkoutTimeout" value="${c3p0.checkoutTimeout}"/>
+        <property name="acquireRetryAttempts" value="${c3p0.acquireRetryAttempts}"/>
+    </bean>
+
+    <!-- 配置SqlSessionFactory对象 -->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!-- 注入数据库连接池 -->
+        <property name="dataSource" ref="dataSource"/>
+        <!-- 扫描model包 使用别名 -->
+        <property name="typeAliasesPackage" value="com.njl.oa.entity"/>
+        <!-- 扫描sql配置文件:mapper需要的xml文件 -->
+        <property name="mapperLocations" value="classpath:mapper/*.xml"/>
+    </bean>
+
+    <!-- 配置扫描Dao接口包，动态实现Dao接口，注入到spring容器中 -->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <!-- 注入sqlSessionFactory -->
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory"/>
+        <!-- 给出需要扫描Dao接口包 -->
+        <property name="basePackage" value="com.njl.oa.dao"/>
+    </bean>
+
+    <!-- 配置事务管理器 -->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <!-- 注入数据库连接池 -->
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!-- 配置Shiro===========================================================================================【开始】 -->
+    <!--1. 配置 SecurityManager!-->
+    <bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+        <!--缓存管理器-->
+        <property name="cacheManager" ref="cacheManager"/>
+        <!--realms-->
+        <property name="realms">
+            <list>
+                <ref bean="jdbcRealm"/>
+            </list>
+        </property>
+    </bean>
+
+    <!--2. 配置 CacheManager缓存管理器.-->
+    <bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+        <!--缓存配置文件（这里暂不涉及，可以随便拷贝一个）-->
+        <property name="cacheManagerConfigFile" value="classpath:ehcache.xml"/>
+    </bean>
+    <!--3. 配置 Realm-->
+    <bean id="jdbcRealm" class="com.njl.oa.shiro.MyRealm">
+        <property name="credentialsMatcher">
+            <bean class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+                <!--定义加密的算法-->
+                <property name="hashAlgorithmName" value="MD5"/>
+                <!--定义加密的次数-->
+                <property name="hashIterations" value="1024"/>
+            </bean>
+        </property>
+    </bean>
+    <!--4. 配置 LifecycleBeanPostProcessor，用来管理shiro一些bean的生命周期-->
+    <bean id="lifecycleBeanPostProcessor" class="org.apache.shiro.spring.LifecycleBeanPostProcessor"/>
+    <!--5. 启用shiro 的注解。但必须在配置了 LifecycleBeanPostProcessor 之后才可以使用-->
+    <bean class="org.springframework.aop.framework.autoproxy.DefaultAdvisorAutoProxyCreator"
+          depends-on="lifecycleBeanPostProcessor"/>
+    <bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+        <property name="securityManager" ref="securityManager"/>
+    </bean>
+    <!--6. 配置 ShiroFilter.-->
+    <bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+        <property name="securityManager" ref="securityManager"/>
+        <property name="loginUrl" value="/main/unLogin"/>
+        <property name="successUrl" value="/main/toMain"/>
+        <property name="unauthorizedUrl" value="/error/404.jsp"/>
+        <property name="filterChainDefinitionMap" ref="filteChainMap"/>
+    </bean>
+
+    <!--核心是获取这个map，由于使用了静态工厂，所以这样定义这个bean-->
+    <bean id="filteChainMap" class="com.njl.oa.shiro.FilterChainMap" factory-method="getFilterChainMap"/>
+    <!-- 配置Shiro===========================================================================================【开始】 -->
+
+
+
+    <!-- 配置基于注解的声明式事务 -->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+</beans>

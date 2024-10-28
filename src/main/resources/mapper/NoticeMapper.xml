@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.NoticeDao">
+
+    <resultMap id="NoticeMap" type="com.njl.oa.entity.Notice">
+        <id column="NOTICE_ID" property="noticeId" jdbcType="INTEGER"/>
+        <result column="NOTICE_THEME" property="noticeTheme" jdbcType="VARCHAR"/>
+        <result column="NOTICE_CONTENT" property="noticeContent" jdbcType="VARCHAR"/>
+        <result column="NOTICE_EMPLOYEE_NUMBER" property="noticeEmployeeNumber" jdbcType="VARCHAR"/>
+        <result column="NOTICE_TIME" property="noticeTime" jdbcType="TIMESTAMP"/>
+        <result column="ISSUE_TIME" property="issueTime" jdbcType="TIMESTAMP"/>
+
+        <result column="NOTICE_EMPLOYEE_REL_ID" property="nerId" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <!-- 查询全部系统公告（管理员） -->
+    <select id="selectNoticeAll" resultMap="NoticeMap">
+        SELECT *
+        FROM msg_notice mn
+        ORDER BY mn.`NOTICE_ID` DESC
+        LIMIT #{page},#{limit};
+    </select>
+
+    <!-- 修改系统公告 -->
+    <update id="updateNotice" parameterType="Notice">
+        UPDATE
+            `OA_2021`.`msg_notice`
+        SET `NOTICE_THEME`           = #{noticeTheme},
+            `NOTICE_CONTENT`         = #{noticeContent},
+            `NOTICE_EMPLOYEE_NUMBER` = #{noticeEmployeeNumber},
+            `NOTICE_TIME`            = NOW()
+        WHERE `NOTICE_ID` = #{noticeId};
+    </update>
+
+    <!-- 删除系统公告 -->
+    <delete id="deleteNotice">
+        DELETE
+        FROM `OA_2021`.`msg_notice`
+        WHERE `NOTICE_ID` = #{noticeId};
+    </delete>
+
+    <!-- 已阅读系统公告 -->
+    <update id="flagNotice">
+        UPDATE msg_notice_employee mne INNER JOIN sys_employee se
+        SET mne.`FLAG` = TRUE
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber}
+          AND mne.`NOTICE_ID` = #{noticeId};
+    </update>
+
+    <!-- 添加系统公告 -->
+    <insert id="addNotice">
+        INSERT INTO `OA_2021`.`msg_notice` (`NOTICE_THEME`,
+                                            `NOTICE_CONTENT`,
+                                            `NOTICE_EMPLOYEE_NUMBER`,
+                                            `NOTICE_TIME`)
+        VALUES (#{noticeTheme},
+                #{noticeContent},
+                #{noticeEmployeeNumber},
+                NOW());
+    </insert>
+
+    <!-- 批量发布系统公告 -->
+    <insert id="bulkReleaseNotice">
+        INSERT INTO `OA_2021`.`msg_notice_employee` (`NOTICE_ID`,
+        `EMPLOYEE_ID`,
+        `FLAG`,
+        `ISSUE_TIME`)
+        VALUES
+        <foreach collection="employeeIdList" item="item" separator=",">
+            (#{noticeId},#{item},false,NOW())
+        </foreach>;
+    </insert>
+
+    <!-- 查询已发布公告 -->
+    <select id="selectPublishedAnnouncements" resultMap="NoticeMap">
+        SELECT mn.*, mne.ISSUE_TIME
+        FROM msg_notice mn
+                 INNER JOIN msg_notice_employee mne ON mn.`NOTICE_ID` = mne.`NOTICE_ID`
+        ORDER BY mn.`NOTICE_ID` DESC
+        LIMIT 0,10;
+    </select>
+
+    <!-- 根据公告ID删除已发布系统公告 -->
+    <delete id="revocation">
+        DELETE
+        FROM msg_notice_employee
+        WHERE NOTICE_ID = #{noticeId};
+    </delete>
+
+    <!-- 根据雇员工号查询最新系统公告 -->
+    <select id="queryingSystemMessages" resultMap="NoticeMap">
+        SELECT mn.*, mne.NOTICE_EMPLOYEE_REL_ID
+        FROM sys_employee se
+                 INNER JOIN msg_notice_employee mne ON se.`EMPLOYEE_ID` = mne.`EMPLOYEE_ID`
+                 INNER JOIN msg_notice mn ON mne.`NOTICE_ID` = mn.`NOTICE_ID`
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber}
+          AND mne.`FLAG` = FALSE
+        ORDER BY mne.`NOTICE_EMPLOYEE_REL_ID`;
+    </select>
+
+    <!-- 修改发布公告阅读状态 -->
+    <update id="noticeRead">
+        UPDATE
+            `OA_2021`.`msg_notice_employee`
+        SET `FLAG` = true
+        WHERE `NOTICE_EMPLOYEE_REL_ID` = #{nerId};
+    </update>
+</mapper>

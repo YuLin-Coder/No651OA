@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.PunchDao">
+
+    <resultMap id="PunchMap" type="com.njl.oa.entity.Punch">
+        <id column="PUNCH_ID" property="punchId" jdbcType="INTEGER"/>
+        <result column="PUNCH_CLASSIFY" property="punchClassify" jdbcType="INTEGER"/>
+        <result column="PUNCH_STATUS" property="punchStatus" jdbcType="INTEGER"/>
+        <result column="EMPLOYEE_ID" property="employeeId" jdbcType="INTEGER"/>
+        <result column="PUNCH_TIME" property="punchTime" jdbcType="TIMESTAMP"/>
+        <result column="PUNCH_DAY" property="punchDay" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_NUMBER" property="employeeNumber" jdbcType="VARCHAR"/>
+        <result column="EMPLOYEE_NAME" property="employeeName" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <!-- 根据工号查询今日有没有打卡 -->
+    <select id="selectEmployeePunchByNumber" resultType="String">
+        SELECT se.`EMPLOYEE_ID`
+        FROM bio_punch bp
+                 INNER JOIN sys_employee se ON bp.`EMPLOYEE_ID` = se.`EMPLOYEE_ID`
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber}
+          AND bp.`PUNCH_CLASSIFY` = #{punchClassify}
+          AND bp.`PUNCH_DAY` = #{punchDay};
+    </select>
+
+    <!-- 根据工号来查询自身的打卡记录 -->
+    <select id="selectPunchByEmployeeNumber" resultMap="PunchMap">
+        SELECT bp.*,se.EMPLOYEE_NUMBER,se.EMPLOYEE_NAME
+        FROM bio_punch bp
+        INNER JOIN sys_employee se ON bp.`EMPLOYEE_ID` = se.`EMPLOYEE_ID`
+        WHERE 1=1
+        <if test="employeeNumber != null">AND se.`EMPLOYEE_NUMBER` LIKE '%${employeeNumber}%'</if>
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            AND bp.PUNCH_TIME <![CDATA[ >= ]]> #{startDate} AND bp.PUNCH_TIME <![CDATA[ <= ]]> #{endDate}
+        </if>
+        ORDER BY bp.`PUNCH_ID` DESC
+        LIMIT #{page},#{limit};
+    </select>
+
+    <!-- 查询雇员打卡记录总数 -->
+    <select id="selectPunchCount" resultType="Integer">
+        SELECT COUNT(*)
+        FROM bio_punch bp
+        INNER JOIN sys_employee se ON bp.`EMPLOYEE_ID` = se.`EMPLOYEE_ID`
+        WHERE 1=1
+        <if test="employeeNumber != null">AND se.`EMPLOYEE_NUMBER` LIKE '%${employeeNumber}%'</if>
+        <if test="startDate != null and startDate != '' and endDate != null and endDate != ''">
+            AND bp.PUNCH_TIME <![CDATA[ >= ]]> #{startDate} AND bp.PUNCH_TIME <![CDATA[ <= ]]> #{endDate}
+        </if>
+    </select>
+
+    <!-- 根据工号查询雇员ID -->
+    <select id="selectEmployeeIdByNumber" resultType="Integer">
+        select se.EMPLOYEE_ID
+        from sys_employee se
+        where se.EMPLOYEE_NUMBER = #{employeeNumber};
+    </select>
+
+    <!-- addPunchCard -->
+    <insert id="addPunchCard" parameterType="Punch">
+        INSERT INTO `OA_2021`.`bio_punch` (`PUNCH_CLASSIFY`,
+                                           `PUNCH_STATUS`,
+                                           `PUNCH_DAY`,
+                                           `EMPLOYEE_ID`,
+                                           `PUNCH_TIME`)
+        VALUES (#{punchClassify},
+                #{punchStatus},
+                #{punchDay},
+                #{employeeId},
+                NOW());
+    </insert>
+
+    <!-- 查询今天有没有打过卡 -->
+    <select id="selectPunchByPunchDayAndEmployeeNumber" resultMap="PunchMap">
+        SELECT bp.*
+        FROM bio_punch bp
+                 INNER JOIN sys_employee se ON bp.`EMPLOYEE_ID` = se.`EMPLOYEE_ID`
+        WHERE bp.`PUNCH_DAY` = #{punchDay}
+        <if test="employeeNumber != null and employeeNumber != ''">  AND se.`EMPLOYEE_NUMBER` = #{employeeNumber};
+        </if>
+
+    </select>
+</mapper>

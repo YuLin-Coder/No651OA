@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.PermissionsDao">
+
+
+    <resultMap id="PermissionsMap" type="com.njl.oa.entity.Permissions">
+        <id column="PERMISSIONS_ID" property="permissionsId" jdbcType="INTEGER"/>
+        <id column="PERMISSIONS_PID" property="permissionsPid" jdbcType="INTEGER"/>
+        <result column="PERMISSIONS_TITLE" property="permissionsTitle" jdbcType="VARCHAR"/>
+        <result column="PERMISSIONS_DESC" property="permissionsDesc" jdbcType="VARCHAR"/>
+        <result column="CREATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+        <result column="UPDATE_TIME" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="PERMISSIONS_START" property="permissionsStart" jdbcType="INTEGER"/>
+    </resultMap>
+
+    <select id="selectPermissionsAll" resultMap="PermissionsMap">
+        SELECT *
+        FROM sys_permissions
+        LIMIT #{page},#{limit};
+    </select>
+    <select id="selectPermissionsAllCount" resultType="Integer">
+        SELECT count(*)
+        FROM sys_permissions;
+    </select>
+
+    <insert id="addPermissions" parameterType="Permissions">
+        INSERT INTO `OA_2021`.`sys_permissions` (`PERMISSIONS_PID`,
+                                                 `PERMISSIONS_TITLE`,
+                                                 `PERMISSIONS_DESC`,
+                                                 `PERMISSIONS_START`,
+                                                 `CREATE_TIME`)
+        VALUES (#{permissionsPid},
+                #{permissionsTitle},
+                #{permissionsDesc},
+                #{permissionsStart},
+                NOW());
+    </insert>
+
+    <update id="updatePermissions" parameterType="Permissions">
+        UPDATE
+            `OA_2021`.`sys_permissions`
+        SET `PERMISSIONS_PID`   = #{permissionsPid},
+            `PERMISSIONS_TITLE` = #{permissionsTitle},
+            `PERMISSIONS_DESC`  = #{permissionsDesc},
+            `PERMISSIONS_START` = #{permissionsStart},
+            `UPDATE_TIME`       = NOW()
+        WHERE `PERMISSIONS_ID` = #{permissionsId};
+    </update>
+
+    <delete id="deletePermissions">
+        DELETE
+        FROM `OA_2021`.`sys_permissions`
+        WHERE
+        <foreach collection="permissionsIdList" separator="or" item="item">
+            `PERMISSIONS_ID` = #{item}
+        </foreach>
+    </delete>
+
+    <select id="selectPermissionsByRoleId" resultType="Integer">
+        SELECT sp.`PERMISSIONS_ID`
+        FROM sys_permissions sp
+                 INNER JOIN sys_role_permissions srp ON sp.`PERMISSIONS_ID` = srp.`PERMISSIONS_ID`
+        WHERE srp.`ROLE_ID` = #{roleId};
+    </select>
+</mapper>

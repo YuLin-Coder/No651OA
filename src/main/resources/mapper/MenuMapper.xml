@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.njl.oa.dao.MenuDao">
+
+    <!--  -->
+    <resultMap id="MenuMap" type="com.njl.oa.entity.Menu">
+        <id column="MENU_ID" property="id" jdbcType="INTEGER"/>
+        <result column="MENU_PID" property="pid" jdbcType="INTEGER"/>
+        <result column="MENU_PID_TITLE" property="pidTitle" jdbcType="VARCHAR"/>
+        <result column="MENU_TITLE" property="title" jdbcType="VARCHAR"/>
+        <result column="MENU_COMMENT" property="comment" jdbcType="VARCHAR"/>
+        <result column="MENU_HREF" property="href" jdbcType="VARCHAR"/>
+        <result column="MENU_ICON" property="icon" jdbcType="VARCHAR"/>
+        <result column="MENU_START" property="start" jdbcType="INTEGER"/>
+        <result column="MENU_SORT" property="sort" jdbcType="INTEGER"/>
+        <result column="CREATE_TIME" property="updateTime" jdbcType="TIMESTAMP"/>
+        <result column="UPDATE_TIME" property="createTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <!-- 根据工号来获取菜单列表 -->
+    <select id="getMenuByEmployeeNumber" resultMap="MenuMap">
+        SELECT sm.*
+        FROM sys_menu sm
+                 INNER JOIN sys_role_menu srm ON sm.`MENU_ID` = srm.`MENU_ID`
+                 INNER JOIN sys_role sr ON srm.`ROLE_ID` = sr.`ROLE_ID`
+                 INNER JOIN sys_employee se ON sr.`ROLE_ID` = se.`ROLE_ID`
+        WHERE se.`EMPLOYEE_NUMBER` = #{employeeNumber}
+          AND sm.MENU_START = TRUE
+        ORDER BY sm.MENU_SORT ASC;
+    </select>
+
+    <!-- 获取全部菜单信息 -->
+    <select id="getMenuAll" resultMap="MenuMap">
+        SELECT *
+        FROM sys_menu sm
+        ORDER BY sm.`MENU_SORT` ASC
+        LIMIT #{page},#{limit};
+    </select>
+
+    <!-- 获取全部菜单信息总数 -->
+    <select id="getMenuAllCount" resultType="Integer">
+        SELECT count(*)
+        FROM sys_menu sm;
+    </select>
+
+    <!-- 添加菜单 -->
+    <insert id="addMenu" parameterType="Menu">
+        INSERT INTO `OA_2021`.`sys_menu` (`MENU_PID`,
+                                          `MENU_TITLE`,
+                                          `MENU_COMMENT`,
+                                          `MENU_HREF`,
+                                          `MENU_ICON`,
+                                          `MENU_START`,
+                                          `CREATE_TIME`,
+                                          `UPDATE_TIME`,
+                                          `MENU_SORT`)
+        VALUES (#{pid},
+                #{title},
+                #{comment},
+                #{href},
+                #{icon},
+                #{start},
+                NOW(),
+                NOW(),
+                #{sort});
+    </insert>
+
+    <!-- 修改菜单信息 -->
+    <update id="updateMenu" parameterType="Menu">
+        UPDATE
+            `OA_2021`.`sys_menu`
+        SET `MENU_PID`     = #{pid},
+            `MENU_TITLE`   = #{title},
+            `MENU_COMMENT` = #{comment},
+            `MENU_HREF`    = #{href},
+            `MENU_ICON`    = #{icon},
+            `UPDATE_TIME`  = NOW(),
+            `MENU_SORT`    = #{sort}
+        WHERE `MENU_ID` = #{id};
+    </update>
+
+    <!-- 删除菜单 -->
+    <delete id="deleteMenu">
+        DELETE
+        FROM `OA_2021`.`sys_menu`
+        WHERE `MENU_ID` = #{id};
+    </delete>
+
+    <!-- 根据角色ID查询菜单 -->
+    <select id="getMenuByRoleId" resultMap="MenuMap">
+        SELECT sm.*
+        FROM sys_role sr
+                 INNER JOIN sys_role_menu srm ON sr.`ROLE_ID` = srm.`ROLE_ID`
+                 INNER JOIN sys_menu sm ON srm.`MENU_ID` = sm.`MENU_ID`
+        WHERE sr.`ROLE_ID` = #{roleId};
+    </select>
+</mapper>
